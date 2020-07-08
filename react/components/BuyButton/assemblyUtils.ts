@@ -103,19 +103,34 @@ export const transformAssemblyOptions = (
   // array with removed assemblies data to show in minicart optimistic preview
   const removed: CartRemovedOption[] = []
 
+  let assemblyInputValuesKeys: GroupId[] = Object.keys(inputValues)
+
   const assemblyItemsKeys: GroupId[] = Object.keys(assemblyOptionsItems)
 
   for (const groupId of assemblyItemsKeys) {
     const items = assemblyOptionsItems[groupId]
     for (const item of items) {
-      const childrenAddedData = item.children
-        ? transformAssemblyOptions(
-            item.children,
-            {},
-            item.price,
-            item.quantity * parentQuantity
-          )
-        : null
+      let childrenAddedData = null
+
+      if (item.children) {
+        let childInputValues: Record<GroupId, InputValue> = {}
+        for (const key in item.children) {
+          childInputValues[key] = inputValues[key]
+        }
+        const handledInputValues = Object.keys(childInputValues)
+        assemblyInputValuesKeys = assemblyInputValuesKeys.filter(inputValueKey => {
+          return handledInputValues.includes(inputValueKey)
+        })
+
+        childrenAddedData = transformAssemblyOptions(
+          item.children,
+          childInputValues,
+          item.price,
+          item.quantity * parentQuantity
+        )
+      }
+
+      console.log(JSON.stringify({groupId, children: item.children, childrenAddedData}, null, 2))
 
       const {
         options: childrenOptions,
@@ -171,8 +186,6 @@ export const transformAssemblyOptions = (
       }
     }
   }
-
-  const assemblyInputValuesKeys: GroupId[] = Object.keys(inputValues)
 
   for (const groupId of assemblyInputValuesKeys) {
     const inputValuesObject = inputValues[groupId] || {}
